@@ -199,7 +199,8 @@ const store = new Vuex.Store({
       return firestore.collection('weights').doc(newWeight.name).set({value: newWeight.value})
         .catch((error) => {
           commit('SET_ERROR', error, 'Adding weight')
-          commit('REMOVE_WEIGHT', newWeight.name) })
+          commit('REMOVE_WEIGHT', newWeight.name)
+        })
     },
     changeWeight({commit}, {weightName, updatedWeight}) {
       return firestore.collection('weights').doc(weightName).update({
