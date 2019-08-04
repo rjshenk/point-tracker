@@ -37,10 +37,6 @@ export default {
       return this.$store.getters.weights
     },
   },
-  created() {
-    // probably don't need to get new weights everytime i come to the page
-    this.$store.dispatch('getWeights')
-  },
   methods: {
     remove(weightId) {
       this.$store.dispatch('removeWeight', weightId)

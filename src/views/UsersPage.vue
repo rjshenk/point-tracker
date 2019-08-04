@@ -63,9 +63,6 @@ export default {
       return [...admin, ...teamLeaders, ...roleNotSet]
     },
   },
-  created() {
-    this.$store.dispatch('getUsers')
-  },
   methods: {
     remove(id) {
       this.$store.dispatch('removeUser', id)

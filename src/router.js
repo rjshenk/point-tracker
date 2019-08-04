@@ -4,7 +4,7 @@ import PointsPage from '@/views/PointsPage.vue'
 import Router from 'vue-router'
 import UsersPage from '@/views/UsersPage.vue'
 import Weights from '@/views/WeightsPage.vue'
-import {auth} from '@/firebase'
+import store from '@/store'
 
 Vue.use(Router)
 
@@ -28,28 +28,57 @@ const router = new Router({
       path: '/users',
       name: 'users',
       component: UsersPage,
-      meta: {requiresAuth: true},
+      meta: {requiresAdmin: true},
     },
     {
       path: '/weights',
       name: 'weights',
       component: Weights,
-      meta: {requiresAuth: true},
+      meta: {requiresAdmin: true},
     },
   ],
 })
 
 router.beforeEach((to, from, next) => {
-  const currentUser = auth.currentUser
-  const onAuthPage = to.name === 'login'
-  if (currentUser && onAuthPage) next('points')
+  if (onPointsPage(to)) {
+    next()
+    return
+  }
 
-  if (to.matched.some(record => record.meta.requiresAuth) && !currentUser) {
-    next({
-      path: '/login',
-      query: {redirect: to.fullPath},
-    })
-  } else next()
+  store.dispatch('fetchCurrentUser').then((currentUser) => {
+    if (adminOnAdminPage(currentUser, to)) {
+      next()
+    } else if (guestOnAdminPage(currentUser, to)) {
+      next({
+        path: '/login',
+        query: {redirect: to.fullPath},
+      })
+    } else if (leaderOnAdminPage(currentUser, to)) {
+      next('points')
+    } else {
+      next()
+    }
+  })
 })
+
+function guestOnAdminPage({role}, to) {
+  return role == 'guest' && onAdminPage(to)
+}
+
+function adminOnAdminPage({role}, to) {
+  return role == 'admin' && onAdminPage(to)
+}
+
+function leaderOnAdminPage({role}, to) {
+  return role == 'leader' && onAdminPage(to)
+}
+
+function onAdminPage(to) {
+  return to.matched.some(record => record.meta.requiresAdmin)
+}
+
+function onPointsPage({name}) {
+  return name == 'points'
+}
 
 export default router

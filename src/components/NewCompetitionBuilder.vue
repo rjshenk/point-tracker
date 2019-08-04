@@ -106,7 +106,6 @@ export default {
   },
   created() {
     this.newCompetition = this.buildNewCompetition()
-    this.$store.dispatch('getWeights')
   },
   methods: {
     buildNewCompetition() {

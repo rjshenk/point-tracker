@@ -2,7 +2,6 @@ import Vue from 'vue'
 import Vuex from 'vuex'
 import {auth, firestore} from '@/firebase'
 import router from '@/router'
-import unsubscribe from './main'
 
 Vue.use(Vuex)
 
@@ -32,12 +31,14 @@ const store = new Vuex.Store({
       role: 'guest',
       team: '',
     },
+    userInitialized: false,
     users: [],
     weights: [],
   },
   mutations: {
     SET_USER_PROPERTIES(state, user) {
       state.user = {...state.user, ...user}
+      state.userInitialized = true
     },
     SIGN_OUT(state) {
       state.user = {
@@ -47,6 +48,7 @@ const store = new Vuex.Store({
         role: 'guest',
         team: '',
       }
+      state.userInitialized = true
     },
     ADD_USERS: (state, users) => {
       Vue.set(state, 'users', users)
@@ -114,12 +116,41 @@ const store = new Vuex.Store({
     },
   },
   actions: {
-    getAdditionalUserProps({commit}, email) {
+    fetchCurrentUser({commit, dispatch}) {
+      return new Promise((resolve, reject) => {
+        if (store.state.userInitialized) {
+          resolve(store.state.user)
+        } else {
+          const unsubscribe = auth.onAuthStateChanged((firebaseUser) => {
+            unsubscribe()
+            if (firebaseUser) {
+              dispatch('userSignIn', firebaseUser)
+                .then(user => resolve(user))
+                .catch(error => commit('SET_ERROR', error, 'firebase signed in user that is not in the user table'))
+            } else {
+              commit('SIGN_OUT')
+              resolve(store.state.user)
+            }
+          }, (authStateChangeError) => {
+            commit('SET_ERROR', authStateChangeError, 'firebase onAuthStateChange error?')
+            reject('firebase onAuthStateChange error')
+          })
+        }
+      })
+    },
+    userSignIn({commit}, {email, photoURL, displayName}) {
       return firestore.collection('users').doc(email).get()
         .then((user) => {
           if (user.exists) {
-            const {role, team} = user.data()
-            commit('SET_USER_PROPERTIES', {role, team})
+            const completedUser = {
+              displayName,
+              email,
+              photoURL,
+              role: user.data().role,
+              team: user.data().team,
+            }
+            commit('SET_USER_PROPERTIES', completedUser)
+            return completedUser
           } else {
             commit('SET_ERROR', `user with ${email} does not exist`, 'firebase saying user does not exist?')
           }
@@ -162,13 +193,8 @@ const store = new Vuex.Store({
         .then(commit('ADD_USER', newUser))
         .catch(error => commit('SET_ERROR', error, 'Adding new user'))
     },
-    autoSignIn({commit, dispatch}, {email, photoURL, displayName}) {
-      commit('SET_USER_PROPERTIES', {email, photoURL, displayName})
-      dispatch('getAdditionalUserProps', email)
-    },
     userSignOut({commit}) {
       auth.signOut()
-      unsubscribe()
       commit('SIGN_OUT')
       router.push('/')
     },
@@ -258,6 +284,18 @@ const store = new Vuex.Store({
         .set({approvalState: newApprovalState}, {merge: true})
         .then(commit('UPDATE_APPROVAL_STATE', {id, newApprovalState}))
         .catch(error => commit('SET_ERROR', error, 'Trying to update approval state'))
+    },
+    initializeAppData({dispatch}) {
+      dispatch('getAllCompetitions')
+
+      dispatch('fetchCurrentUser').then((currentUser) => {
+        if (currentUser.role == 'admin') {
+          dispatch('getWeights')
+          dispatch('getUsers')
+        } else if (currentUser.role == 'leader') {
+          dispatch('getWeights')
+        }
+      })
     },
   },
   getters: {

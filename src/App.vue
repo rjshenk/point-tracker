@@ -18,7 +18,7 @@ export default {
     },
   },
   created() {
-    this.$store.dispatch('getAllCompetitions')
+    this.$store.dispatch('initializeAppData')
   },
 }
 </script>

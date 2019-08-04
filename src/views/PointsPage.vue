@@ -62,7 +62,7 @@ export default {
       return this.$store.state.competitions
     },
     canAddPoints() {
-      return this.isAdmin || this.$store.getters.isLeader
+      return this.isAdmin || this.isLeader
     },
     teamScores() {
       return this.competitions.reduce((acc, {winner, points, approvalState, tied}) => {
@@ -78,9 +78,6 @@ export default {
     },
     isLeader() {
       return this.$store.getters.isLeader
-    },
-    currentUserTeam() {
-      return this.$store.getters.currentUserTeam
     },
   },
   methods: {
