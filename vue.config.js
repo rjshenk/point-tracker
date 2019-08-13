@@ -1,14 +1,21 @@
 const RollbarSourceMapPlugin = require('rollbar-sourcemap-webpack-plugin')
+const PUBLIC_PATH = 'https://points.live/'
 
 module.exports = {
   configureWebpack: {
-    plugins: [
-      new RollbarSourceMapPlugin({
-        accessToken: 'd71e337e9631468e8564e79178e7883f',
-        version: 'version-1',
-        publicPath: 'https://points.live/'
-      })
-    ]
+    entry: 'index',
+    ignoreErrors: false,
+    publicPath: PUBLIC_PATH,
+    output: {
+      path: 'dist',
+      filename: 'index-[hash].js'
+    },
+    plugins: [new RollbarSourceMapPlugin({
+      accessToken: 'c28199817cb14361b39b960f5b69df86',
+      version: 'version 1',
+      publicPath: PUBLIC_PATH
+    })],
+    silent: false,
   },
   devServer: {
     port: '3000',
